@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/0.5.2/tailwind.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"
+    integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+"
+    crossorigin="anonymous"></script>
+    <title>Home</title>
+</head>
+
+<body>
+    <div class="flex h-screen w-screen">
+        <div class="flex flex-col h-100 w-24">
+            <div class="online-peps flex h-screen items-center flex-col gap-1 mt-8">
+               
+            </div>
+        </div>
+        <div class="msger w-screen">
+            <header class="msger-header">
+                <div class="msger-header-title">
+                    <i class="fas fa-comment-alt"></i> Name
+                </div>
+                <div class="msger-header-options">
+                    <span><i class="fas fa-cog"></i></span>
+                </div>
+            </header>
+    
+            <main class="msger-chat">
+                
+            </main>
+    
+            <div class="msger-inputarea">
+                <input type="text" class="msger-input" placeholder="Enter your message...">
+                <button type="" class="msger-send-btn">Send</button>
+            </div>
+        </div>
+        <div class="flex w-16 mb-5">
+            <a class="mt-8 relative" href="/logout">Logout</a>
+        </div>
+    </div>
+    <script>
+        const socket = io();
+        const msgerChat = document.querySelector(".msger-chat");
+        
+
+        function formatDate(date) {
+            const h = "0" + date.getHours();
+            const m = "0" + date.getMinutes();
+
+            return `${h.slice(-2)}:${m.slice(-2)}`;
+        }
+
+        function appendMessage(name, img, side, text, date) {
+            //   Simple solution for small apps
+            const msgHTML = `
+                <div class="msg ${side}-msg">
+                <div class="msg-img" style="background-image: url(${img})"></div>
+
+                <div class="msg-bubble">
+                    <div class="msg-info">
+                    <div class="msg-info-name">${name}</div>
+                    <div class="msg-info-time">${formatDate(new Date(date))}</div>
+                    </div>
+
+                    <div class="msg-text">${text}</div>
+                </div>
+                </div>
+            `;
+
+            msgerChat.insertAdjacentHTML("beforeend", msgHTML);
+            msgerChat.scrollTop += 500;
+        }
+
+        socket.on("connect", () => {
+            console.log("connected 2");
+        });
+
+        function addMessage(isOwn, message, name, date){
+            if(isOwn){
+                appendMessage(name, "https://flowbite.com/docs/images/people/profile-picture-2.jpg", 'right', message, date);
+                
+            }else{
+                appendMessage(name, "https://flowbite.com/docs/images/people/profile-picture-2.jpg", 'left', message, date);
+            }
+        }
+
+        socket.on("chat-message", (data) => {
+            addMessage(false, data.message, data.name, data.date);
+        });
+
+        socket.on("online", (data) => {
+            const template = `
+                <div class="${data.id} flex flex-col">
+                    <img class="w-10 h-10 rounded-full" src="https://flowbite.com/docs/images/people/profile-picture-1.jpg"
+                        alt="">
+                    <span
+                        class="bottom-3 left-7 relative  w-3.5 h-3.5 bg-green-400 border-1 border-white dark:border-gray-800 rounded-full"></span>
+                    <span class="w-12 bottom-3 right-1 text-center relative truncate">${data.name}</span>
+                </div>`;
+
+            if(!document.querySelector(".online-peps")){
+                document.querySelector(".online-peps").insertAdjacentHTML("beforeend", template);
+            }
+
+            
+        });
+
+        document.querySelector(".msger-send-btn").addEventListener("click", () => {
+            const msg = document.querySelector(".msger-input").value;
+            addMessage(true, msg, "You", new Date());
+            socket.emit("message", msg);
+        });
+
+
+    </script>
+</body>
+
+</html>
